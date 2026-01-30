@@ -24,57 +24,44 @@ async def get_one(id: int, db: AsyncSession = Depends(get_db)):
     course = await course_controller.get_course(db, id)
     if not course:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
+            status_code=404, 
             detail="Course not found"
         )
-    return {
-        "status":"success",
-        "data": course
-    }
+    return course
 
 @router.post("/", response_model=course_schema.Course, status_code=status.HTTP_201_CREATED)
 async def create(course_data: course_schema.CourseCreate, db: AsyncSession = Depends(get_db)):
     course = await course_controller.create_course(db, course_data)
-    return {
-        "status":"success",
-        "data": course
-    }
+    return course
 
 @router.put("/{id}", response_model=course_schema.Course)
 async def update(id: int, course_data: course_schema.CourseUpdate, db: AsyncSession = Depends(get_db)):
     updated_course = await course_controller.update_course(db, id, course_data)
     if not updated_course:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
+            status_code=404, 
             detail="Course not found"
         )
-    return {
-        "status":"success",
-        "data":updated_course
-    }
+    return updated_course
 
 @router.delete("/{id}", status_code=status.HTTP_200_OK, dependencies=[Depends(admin_only)])
 async def delete(id: int, db: AsyncSession = Depends(get_db),):
     success = await course_controller.delete_course(db, id)
     if not success:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
+            status_code=404, 
             detail="Course not found"
         )
     return { 
         "status":"success",
         "message": "Course deleted successfully"}
 
-@router.get("/course-rolls/{course_id}",dependencies=[Depends(admin_only)]
-            )
+@router.get("/course-rolls/{course_id}",dependencies=[Depends(admin_only)])
 async def get_entries_by_course(course_id: int, db: AsyncSession = Depends(get_db)):
     course_with_students = await course_controller.get_students_by_course(db, course_id)
     if not course_with_students:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=404,
             detail="Course not found"
         )
-    return {
-        "status": "success",
-        "Data": [{"rollNo": s.roll_no, "Name": s.name} for s in course_with_students.students]
-    }
+    return [{"rollNo": s.roll_no, "Name": s.name} for s in course_with_students.students]

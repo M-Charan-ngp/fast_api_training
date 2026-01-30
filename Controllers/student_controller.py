@@ -1,7 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select,or_
-from sqlalchemy.exc import IntegrityError
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from Models.Student import Student as StudentModel
 from Models.Course import Course as CourseModel
 from schemas import student as StudentSchema
@@ -17,7 +16,7 @@ async def create_student(db: AsyncSession, student: StudentSchema.StudentCreate)
         )
         if result.scalars().first():
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=400,
                 detail="Student with this Roll Number or Email already exists"
             )
 
@@ -32,6 +31,7 @@ async def create_student(db: AsyncSession, student: StudentSchema.StudentCreate)
     except Exception:
         await db.rollback()
         raise HTTPException(status_code=500, detail="Failed to create student record")
+
 # all students
 async def get_students(db: AsyncSession, page: int = 0, limit: int = 10):
     try:
@@ -81,7 +81,7 @@ async def update_student(db: AsyncSession, student_id: int, student_update: Stud
             existing = await db.execute(check_stmt)
             if existing.scalars().first():
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
+                    status_code=400,
                     detail="Roll number or Email is already taken by another student"
                 )
 

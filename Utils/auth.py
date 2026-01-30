@@ -21,10 +21,8 @@ def verify_token(token: str):
         if not username:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials")
-            
+                detail="Could not validate credentials") 
         return payload
-
     except JWTError as e:
         error_msg = str(e).capitalize()
         raise HTTPException(

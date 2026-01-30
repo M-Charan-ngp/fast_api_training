@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from Models.Course import Course as CourseModel
 from schemas import course as course_schema
 
@@ -32,7 +32,7 @@ async def create_course(db: AsyncSession, course: course_schema.CourseCreate):
         )
         if result.scalars().first():
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, 
+                status_code=400, 
                 detail="Course code already exists"
             )
         db_course = CourseModel(**course.model_dump())
@@ -62,7 +62,7 @@ async def update_course(db: AsyncSession, id: int, course_data: course_schema.Co
             )
             if result.scalars().first():
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST, 
+                    status_code=400,
                     detail="Course code already exists"
                 ) 
         stmt = (

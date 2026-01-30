@@ -11,7 +11,7 @@ class StudentRollSchema(BaseModel):
 # --- Course Schemas ---
 class CourseBase(BaseModel):
     course_code: str = Field(pattern=r"^[A-Z]{2}\d{3}$")
-    title: str
+    title: str 
     credits: int = 3
 
 

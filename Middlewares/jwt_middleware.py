@@ -1,11 +1,11 @@
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, Request,Header
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from Config.database import get_db
 from Models.User import UserModel, UserRole
 from Utils.auth import verify_token
 
-async def get_current_user(request: Request, db: AsyncSession = Depends(get_db)) -> UserModel:
+async def get_current_user(request: Request,Authorization: str= Header(None), db: AsyncSession = Depends(get_db)) -> UserModel:
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing Authorization Header")
