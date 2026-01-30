@@ -38,12 +38,12 @@ async def get_student(id: int, db: AsyncSession = Depends(get_db)):
         )
     return db_student
 
-@router.post("/", response_model=student_schema.Student, status_code=201)
+@router.post("/", response_model=student_schema.Student, status_code=201,dependencies=[Depends(admin_only)])
 async def create_student(student_data: student_schema.StudentCreate, db: AsyncSession = Depends(get_db)):
     student = await student_controller.create_student(db, student_data)
     return student
 
-@router.put("/{id}", response_model=student_schema.Student)
+@router.put("/{id}", response_model=student_schema.Student,dependencies=[Depends(admin_only)])
 async def update_student(id: int, student_data: student_schema.StudentUpdate, db: AsyncSession = Depends(get_db)):
     db_student = await student_controller.update_student(db, id, student_data)
     if not db_student:
@@ -53,7 +53,7 @@ async def update_student(id: int, student_data: student_schema.StudentUpdate, db
         )
     return db_student
 
-@router.delete("/{id}")
+@router.delete("/{id}",dependencies=[Depends(admin_only)])
 async def delete_student(id: int, db: AsyncSession = Depends(get_db)):
     success = await student_controller.delete_student(db, id)
     if not success:

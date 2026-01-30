@@ -3,7 +3,7 @@ from datetime import date
 from typing import Optional
 
 class StudentBase(BaseModel):
-    name: str
+    name: str = Field(min_length=3)
     roll_no: str = Field(pattern=r"^\d{2}[A-Z]{3}\d{4}$")
     email: EmailStr
     date_of_birth: Optional[date] = None

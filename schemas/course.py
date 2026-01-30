@@ -2,16 +2,15 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 
 class StudentRollSchema(BaseModel):
-    name: str
-    roll_no: str 
+    name: str = Field(min_length=3)
+    roll_no: str = Field(pattern=r"^\d{2}[A-Z]{3}\d{4}$")
 
     class Config:
         from_attributes = True 
 
-# --- Course Schemas ---
 class CourseBase(BaseModel):
     course_code: str = Field(pattern=r"^[A-Z]{2}\d{3}$")
-    title: str 
+    title: str  = Field(min_length=3)
     credits: int = 3
 
 
