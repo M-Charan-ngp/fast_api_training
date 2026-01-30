@@ -29,12 +29,12 @@ async def get_one(id: int, db: AsyncSession = Depends(get_db)):
         )
     return course
 
-@router.post("/", response_model=course_schema.Course, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=course_schema.Course, status_code=status.HTTP_201_CREATED,dependencies=[Depends(admin_only)])
 async def create(course_data: course_schema.CourseCreate, db: AsyncSession = Depends(get_db)):
     course = await course_controller.create_course(db, course_data)
     return course
 
-@router.put("/{id}", response_model=course_schema.Course)
+@router.put("/{id}", response_model=course_schema.Course,dependencies=[Depends(admin_only)])
 async def update(id: int, course_data: course_schema.CourseUpdate, db: AsyncSession = Depends(get_db)):
     updated_course = await course_controller.update_course(db, id, course_data)
     if not updated_course:
