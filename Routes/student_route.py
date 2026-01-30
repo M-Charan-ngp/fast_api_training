@@ -14,7 +14,7 @@ router = APIRouter(
 admin_only = RoleChecker([UserRole.ADMIN])
 
 @router.get("/", response_model=List[student_schema.Student])
-async def get_students(page: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)):
+async def get_students(page: int = 0, limit: int = 10, db: AsyncSession = Depends(get_db)):
     return await student_controller.get_students(db, page=page, limit=limit)
 
 @router.get("/search/{roll_no}", response_model=student_schema.Student)
