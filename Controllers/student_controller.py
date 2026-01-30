@@ -50,7 +50,7 @@ async def get_student(db: AsyncSession, student_id: int):
         raise HTTPException(status_code=500, detail="Error fetching student details")
 
 # student by roll number
-async def get_student_by_roll(db: AsyncSession, roll_no: str):
+async def get_student_by_roll(db: AsyncSession, roll_no: StudentSchema.StudentRoll):
     try:
         result = await db.execute(
             select(StudentModel).filter(StudentModel.roll_no == roll_no)

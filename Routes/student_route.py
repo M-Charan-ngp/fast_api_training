@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException,Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from Config.database import get_db
@@ -18,12 +18,12 @@ async def get_students(page: int = 0, limit: int = 100, db: AsyncSession = Depen
     return await student_controller.get_students(db, page=page, limit=limit)
 
 @router.get("/search/{roll_no}", response_model=student_schema.Student)
-async def get_by_roll_no(roll_no: str, db: AsyncSession = Depends(get_db)):
+async def get_by_roll_no(roll_no: str = Path(..., pattern=r"^\d{2}[A-Z]{3}\d{4}$"), db: AsyncSession = Depends(get_db)):
     print("hello")
     db_student = await student_controller.get_student_by_roll(db, roll_no)
     if not db_student:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
+            status_code=404, 
             detail="Student with this roll number not found"
         )
     return db_student
@@ -33,12 +33,12 @@ async def get_student(id: int, db: AsyncSession = Depends(get_db)):
     db_student = await student_controller.get_student(db, id)
     if not db_student:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
+            status_code=404, 
             detail="Student not found"
         )
     return db_student
 
-@router.post("/", response_model=student_schema.Student, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=student_schema.Student, status_code=201)
 async def create_student(student_data: student_schema.StudentCreate, db: AsyncSession = Depends(get_db)):
     student = await student_controller.create_student(db, student_data)
     return student
@@ -48,7 +48,7 @@ async def update_student(id: int, student_data: student_schema.StudentUpdate, db
     db_student = await student_controller.update_student(db, id, student_data)
     if not db_student:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
+            status_code=404, 
             detail="Student not found"
         )
     return db_student
@@ -58,27 +58,28 @@ async def delete_student(id: int, db: AsyncSession = Depends(get_db)):
     success = await student_controller.delete_student(db, id)
     if not success:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
+            status_code=404, 
             detail="Student not found"
         )
     return {
         "status":"success",
-        "message": "Student deleted successfully"}
+        "message": "Student deleted successfully"
+    }
 
 @router.post("/enroll",dependencies=[Depends(admin_only)])
 async def enroll_student(enrollment: student_schema.EnrollmentCreate, db: AsyncSession = Depends(get_db)):
     result = await student_controller.enroll_student_in_course(db, enrollment)
     if result is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
+            status_code=404, 
             detail="Either invalid student id or course id"
         )
     
     if result is False:
-        return {
-            "status": "fail", 
-            "message": "Student already enrolled in this course"
-        }
+        raise HTTPException(
+            status_code=400, 
+            detail="Student already enrolled in this course"
+        )
     return {
         "status": "success", 
         "message": "Enrollment successful"
