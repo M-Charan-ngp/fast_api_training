@@ -1,0 +1,13 @@
+[project]
+name = "fast-api"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "bcrypt>=5.0.0",
+    "cryptography>=46.0.4",
+    "greenlet>=3.3.1",
+    "passlib>=1.7.4",
+    "python-jose>=3.5.0",
+]
