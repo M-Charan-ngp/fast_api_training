@@ -63,21 +63,23 @@ async def delete(id: int, db: AsyncSession = Depends(get_db),):
         "message": "Course deleted successfully"}
 
 @router.post("/addStudents/{course_id}", dependencies=[Depends(admin_only)])
-async def bulk_add_students_to_course(
-    course_id: int, 
-    enrollment_data: course_schema.BulkEnrollment, 
-    db: AsyncSession = Depends(get_db)
-):
-    added_count,existing_ids = await course_controller.bulk_enroll_students(
-        db, course_id, enrollment_data.student_ids
-    )
-    if added_count is None:
+async def bulk_enroll(course_id: int, data: course_schema.BulkEnrollment, db: AsyncSession = Depends(get_db)):
+    # 1. Call Controller
+    result = await course_controller.bulk_enroll_students(db, course_id, data.student_ids)
+
+    if result.get("error") == "course_not_found":
         raise HTTPException(status_code=404, detail="Course not found")
-    if added_count ==0:
-        raise HTTPException(status_code=409, detail="All the students in the list are already enrolled or id's not available")
+    if len(result['new_ids'])==0:
+        raise HTTPException(
+            status_code=409, 
+            detail="All student id's or either not available or already enrolled")
+
     return {
-        "status": "success",
-        "message": f"Successfully enrolled {added_count} new students, already enrolled or not available students omited",
-        "Omitted": existing_ids,
-        "total_requested": len(enrollment_data.student_ids)
+        "status": "Success",
+        "message": f"Successfully added {len(result['new_ids'])} students",
+        "details": {
+            "enrolled": result["new_ids"],
+            "skipped": result["already_enrolled"],
+            "not_found": result["missing"]
+        }
     }

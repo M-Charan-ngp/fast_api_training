@@ -105,24 +105,34 @@ async def bulk_enroll_students(db: AsyncSession, course_id: int, student_ids: Li
             .filter(CourseModel.id == course_id)
         )
         course = result.scalars().first()
+        
         if not course:
-            return None
+            return {"error": "course_not_found"}
+
         student_result = await db.execute(
             select(StudentModel).filter(StudentModel.id.in_(student_ids))
         )
-        students_to_add = student_result.scalars().all()
+        students_found = student_result.scalars().all()
+        
+        found_ids = {s.id for s in students_found}
+        missing_ids = [s_id for s_id in student_ids if s_id not in found_ids]
 
         existing_ids = {s.id for s in course.students}
-        new_students = [s for s in students_to_add if s.id not in existing_ids]
+        new_students = [s for s in students_found if s.id not in existing_ids]
+        already_enrolled_ids = [s.id for s in students_found if s.id in existing_ids]
 
         if new_students:
             course.students.extend(new_students)
             await db.commit()
             await db.refresh(course)
-        else:
-            return 0
-        return len(new_students),existing_ids
-    
+        
+        return {
+        "success": True,
+        "new_ids": [s.id for s in new_students],
+        "already_enrolled": already_enrolled_ids,
+        "missing": missing_ids
+    }
+
     except Exception:
         await db.rollback()
-        raise HTTPException(status_code=500, detail="Bulk enrollment failed")
+        raise HTTPException(status_code=500, detail="Internal database error during bulk enrollment")
