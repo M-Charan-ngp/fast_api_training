@@ -16,8 +16,14 @@ router = APIRouter(
 admin_only = RoleChecker([UserRole.ADMIN])
 
 @router.get("/", response_model=List[course_schema.Course])
-async def get_all(db: AsyncSession = Depends(get_db)):
-    return await course_controller.get_all_courses(db)
+async def get_all(db: AsyncSession = Depends(get_db),page: int = 0, limit: int = 10):
+    courses = await course_controller.get_all_courses(db,page,limit)
+    if not courses:
+        raise HTTPException(
+            status_code=404, 
+            detail="courses not found"
+        )
+    return courses
 
 @router.get("/{id}", response_model=course_schema.CourseWithDetails)
 async def get_one(id: int, db: AsyncSession = Depends(get_db)):
@@ -29,7 +35,7 @@ async def get_one(id: int, db: AsyncSession = Depends(get_db)):
         )
     return course
 
-@router.post("/", response_model=course_schema.Course, status_code=status.HTTP_201_CREATED,dependencies=[Depends(admin_only)])
+@router.post("/", response_model=course_schema.Course, status_code=201,dependencies=[Depends(admin_only)])
 async def create(course_data: course_schema.CourseCreate, db: AsyncSession = Depends(get_db)):
     course = await course_controller.create_course(db, course_data)
     return course
@@ -56,12 +62,22 @@ async def delete(id: int, db: AsyncSession = Depends(get_db),):
         "status":"success",
         "message": "Course deleted successfully"}
 
-@router.get("/course-rolls/{course_id}",dependencies=[Depends(admin_only)])
-async def get_entries_by_course(course_id: int, db: AsyncSession = Depends(get_db)):
-    course_with_students = await course_controller.get_students_by_course(db, course_id)
-    if not course_with_students:
-        raise HTTPException(
-            status_code=404,
-            detail="Course not found"
-        )
-    return [{"rollNo": s.roll_no, "Name": s.name} for s in course_with_students.students]
+@router.post("/addStudents/{course_id}", dependencies=[Depends(admin_only)])
+async def bulk_add_students_to_course(
+    course_id: int, 
+    enrollment_data: course_schema.BulkEnrollment, 
+    db: AsyncSession = Depends(get_db)
+):
+    added_count,existing_ids = await course_controller.bulk_enroll_students(
+        db, course_id, enrollment_data.student_ids
+    )
+    if added_count is None:
+        raise HTTPException(status_code=404, detail="Course not found")
+    if added_count ==0:
+        raise HTTPException(status_code=409, detail="All the students in the list are already enrolled or id's not available")
+    return {
+        "status": "success",
+        "message": f"Successfully enrolled {added_count} new students, already enrolled or not available students omited",
+        "Omitted": existing_ids,
+        "total_requested": len(enrollment_data.student_ids)
+    }

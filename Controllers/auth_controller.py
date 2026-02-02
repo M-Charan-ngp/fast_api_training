@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from Models.User import UserModel
 from sqlalchemy.exc import IntegrityError
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from schemas.user import UserCreate
 from Utils.security import hash_password, verify_password
 from Utils.auth import create_token
@@ -23,14 +23,14 @@ async def register_new_user(db: AsyncSession, user_data: UserCreate):
     except IntegrityError:
         await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=409,
             detail="Username already registered"
         )
     except Exception as e:
         await db.rollback()
         print(f"Registration Error: {e}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=500,
             detail="An error occurred during registration"
         )
 
@@ -43,7 +43,7 @@ async def login_user(db: AsyncSession, username, password):
             return token
         else:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
+                status_code=401,
                 detail="Invalid username or password"
             )
     except HTTPException as e:
@@ -51,6 +51,6 @@ async def login_user(db: AsyncSession, username, password):
     except Exception as e:
         print(f"Login Error: {e}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=500,
             detail="Internal server error during login"
         )

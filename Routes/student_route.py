@@ -15,11 +15,15 @@ admin_only = RoleChecker([UserRole.ADMIN])
 
 @router.get("/", response_model=List[student_schema.Student])
 async def get_students(page: int = 0, limit: int = 10, db: AsyncSession = Depends(get_db)):
-    return await student_controller.get_students(db, page=page, limit=limit)
+    students = await student_controller.get_students(db, page=page, limit=limit)
+    if not students:
+        raise HTTPException(
+            status_code=404,
+            detail="students not found")
+    return students
 
 @router.get("/search/{roll_no}", response_model=student_schema.Student)
 async def get_by_roll_no(roll_no: str = Path(..., pattern=r"^\d{2}[A-Z]{3}\d{4}$"), db: AsyncSession = Depends(get_db)):
-    print("hello")
     db_student = await student_controller.get_student_by_roll(db, roll_no)
     if not db_student:
         raise HTTPException(

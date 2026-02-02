@@ -2,10 +2,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
 from fastapi import HTTPException
+from typing import List
 from Models.Course import Course as CourseModel
 from schemas import course as course_schema
+from sqlalchemy.orm import selectinload
+from Models.Student import Student as StudentModel
 
-async def get_all_courses(db: AsyncSession, page: int = 0, limit: int = 10):
+async def get_all_courses(db: AsyncSession, page: int, limit: int):
     try:
         result = await db.execute(
             select(CourseModel).offset(page * limit).limit(limit)
@@ -32,7 +35,7 @@ async def create_course(db: AsyncSession, course: course_schema.CourseCreate):
         )
         if result.scalars().first():
             raise HTTPException(
-                status_code=400, 
+                status_code=409, 
                 detail="Course code already exists"
             )
         db_course = CourseModel(**course.model_dump())
@@ -62,7 +65,7 @@ async def update_course(db: AsyncSession, id: int, course_data: course_schema.Co
             )
             if result.scalars().first():
                 raise HTTPException(
-                    status_code=400,
+                    status_code=409,
                     detail="Course code already exists"
                 ) 
         stmt = (
@@ -94,13 +97,32 @@ async def delete_course(db: AsyncSession, id: int):
         await db.rollback()
         raise HTTPException(status_code=500, detail="Failed to delete course")
 
-async def get_students_by_course(db: AsyncSession, course_id: int):
+async def bulk_enroll_students(db: AsyncSession, course_id: int, student_ids: List[int]):
     try:
         result = await db.execute(
             select(CourseModel)
             .options(selectinload(CourseModel.students))
             .filter(CourseModel.id == course_id)
         )
-        return result.scalars().first()
+        course = result.scalars().first()
+        if not course:
+            return None
+        student_result = await db.execute(
+            select(StudentModel).filter(StudentModel.id.in_(student_ids))
+        )
+        students_to_add = student_result.scalars().all()
+
+        existing_ids = {s.id for s in course.students}
+        new_students = [s for s in students_to_add if s.id not in existing_ids]
+
+        if new_students:
+            course.students.extend(new_students)
+            await db.commit()
+            await db.refresh(course)
+        else:
+            return 0
+        return len(new_students),existing_ids
+    
     except Exception:
-        raise HTTPException(status_code=500, detail="Database error")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Bulk enrollment failed")

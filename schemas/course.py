@@ -13,6 +13,8 @@ class CourseBase(BaseModel):
     title: str  = Field(min_length=3)
     credits: int = 3
 
+class BulkEnrollment(BaseModel):
+    student_ids: List[int]
 
 class CourseCreate(CourseBase):
     pass

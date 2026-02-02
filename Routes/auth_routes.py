@@ -1,9 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from Config.database import get_db
 from Controllers import auth_controller
-from Utils.auth import create_token
 from Middlewares.auth_key_middleware import validate_auth_key
 from schemas import user as user_schema
 
@@ -18,7 +16,10 @@ async def register(user_in: user_schema.UserCreate, db: AsyncSession = Depends(g
     user = await auth_controller.register_new_user(db, user_in)
     if not user:
         raise HTTPException(status_code=400, detail="Username already exists")
-    return "Registration Success"
+    return {
+        "status":"success",
+        "msg":"Registration Success"
+    }
 
 @router.post("/login")
 async def login(form_data: user_schema.LoginRequest, db: AsyncSession = Depends(get_db)):

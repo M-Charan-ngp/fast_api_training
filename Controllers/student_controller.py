@@ -16,7 +16,7 @@ async def create_student(db: AsyncSession, student: StudentSchema.StudentCreate)
         )
         if result.scalars().first():
             raise HTTPException(
-                status_code=400,
+                status_code=409,
                 detail="Student with this Roll Number or Email already exists"
             )
 
@@ -33,7 +33,7 @@ async def create_student(db: AsyncSession, student: StudentSchema.StudentCreate)
         raise HTTPException(status_code=500, detail="Failed to create student record")
 
 # all students
-async def get_students(db: AsyncSession, page: int = 0, limit: int = 10):
+async def get_students(db: AsyncSession, page:int, limit: int):
     try:
         result = await db.execute(
             select(StudentModel).offset(page*limit).limit(limit)
@@ -81,7 +81,7 @@ async def update_student(db: AsyncSession, student_id: int, student_update: Stud
             existing = await db.execute(check_stmt)
             if existing.scalars().first():
                 raise HTTPException(
-                    status_code=400,
+                    status_code=409,
                     detail="Roll number or Email is already taken by another student"
                 )
 
@@ -97,8 +97,7 @@ async def update_student(db: AsyncSession, student_id: int, student_update: Stud
         await db.rollback()
         raise HTTPException(status_code=500, detail="Failed to update student record")
 
-
-
+# Delete Student
 async def delete_student(db: AsyncSession, student_id: int):
     try:
         db_student = await db.get(StudentModel, student_id)
@@ -112,6 +111,7 @@ async def delete_student(db: AsyncSession, student_id: int):
         await db.rollback()
         raise HTTPException(status_code=500, detail="An error occurred while deleting the student")
 
+#only one student in course
 async def enroll_student_in_course(db: AsyncSession, enrollment: StudentSchema.EnrollmentCreate):
     try:
         result = await db.execute(
